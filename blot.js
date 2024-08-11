@@ -1,6 +1,19 @@
 let width = 125;
 let height = 125;
+let tiles = 225; // 225 Reccomended (Perfect Square Required) Change for difficulty
+let gridSize = Math.sqrt(tiles)
+let tileSize = Math.min(width, height) / Math.sqrt(tiles);
+
 setDocDimensions(width, height);
+
+let grid = [];
+for (let y = 0; y < gridSize; y++) {
+    let row = [];
+    for (let x = 0; x < gridSize; x++) {
+        row.push({top: true, right: true, bottom: true, left: true});
+    }
+    grid.push(row);
+}
 
 function draw(origin, side) {
   if (side == 'left') {
@@ -15,69 +28,59 @@ function draw(origin, side) {
       ]]);
   } else if (side == 'bottom') {
       drawLines([[ 
-        [origin[0] * tileSize, origin[1] * tileSize], 
-        [origin[0] * tileSize + tileSize, origin[1] * tileSize]
-      ]]);
-  } else if (side == 'top') {
-      drawLines([[ 
         [origin[0] * tileSize, origin[1] * tileSize + tileSize], 
         [origin[0] * tileSize + tileSize, origin[1] * tileSize + tileSize]
       ]]);
+  } else if (side == 'top') {
+      drawLines([[ 
+        [origin[0] * tileSize, origin[1] * tileSize], 
+        [origin[0] * tileSize + tileSize, origin[1] * tileSize]
+      ]]);
   }
 }
 
-function createPassway(fromDirection, toDirection, origin) {
-  if (fromDirection == toDirection) {
-    if (fromDirection == 'up' || fromDirection == 'down') {
-      draw(origin, 'right')
-      draw(origin, 'left')
-    } else if (fromDirection == 'right' || fromDirection == 'left') {
-      draw(origin, 'top')
-      draw(origin, 'bottom')
+function breakWall(x, y, direction) {
+    if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) {
+        console.error("Invalid cell coordinates");
+        return;
     }
-  } 
-  
-  else if (fromDirection == 'up') {
-    draw(origin, 'top')
-    if (toDirection == 'right') {
-      draw(origin, 'left')
-    } else if (toDirection == 'left') {
-      draw(origin, 'right')
+    
+    if (!['top', 'right', 'bottom', 'left'].includes(direction)) {
+        console.error("Invalid direction");
+        return;
     }
-  } 
-  
-  else if (fromDirection == 'down') {
-    draw(origin, 'bottom')
-    if (toDirection == 'right') {
-      draw(origin, 'left')
-    } else if (toDirection == 'left') {
-      draw(origin, 'right')
-    }
-  } 
-  
-  else if (fromDirection == 'right') {
-    draw(origin, 'right')
-    if (toDirection == 'up') {
-      draw(origin, 'bottom')
-    } else if (toDirection == 'down') {
-      draw(origin, 'top')
-    }
-  }
+    
+    grid[y][x][direction] = false;
 
-  else if (fromDirection == 'left') {
-    draw(origin, 'left')
-    if (toDirection == 'up') {
-      draw(origin, 'bottom')
-    } else if (toDirection == 'down') {
-      draw(origin, 'top')
+    let [dx, dy, oppDir] = {
+        'top': [0, -1, 'bottom'],
+        'right': [1, 0, 'left'],
+        'bottom': [0, 1, 'top'],
+        'left': [-1, 0, 'right']
+    }[direction];
+
+    let newX = x + dx;
+    let newY = y + dy;
+    
+    if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize) {
+        grid[newY][newX][oppDir] = false;
     }
-  }
 }
 
-let tiles = 100
-let tileSize = Math.sqrt(width*height/tiles)
+function renderGrid() {
+    for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+            let cell = grid[y][x];
+            if (cell.top) draw([x, y], 'top');
+            if (cell.right) draw([x, y], 'right');
+            if (cell.bottom) draw([x, y], 'bottom');
+            if (cell.left) draw([x, y], 'left');
+        }
+    }
+}
+
 let correctPath = [[0, 0]]
-let visited = [[0, 0]]; // Initialize visited as an array with the starting tile
+let visited = [[0, 0]];
 
 function generatePath() {
   const gridSize = Math.sqrt(tiles);
@@ -106,9 +109,23 @@ function generatePath() {
       if (randomOptions.length > 0) {
         // Choose a random option and add it to the path
         let option = randomOptions[Math.floor(Math.random() * randomOptions.length)];
+
+        let direction = ''
+        if (option[0] > lastPosition[0]) {
+          direction = 'right'
+        } else if (option[0] < lastPosition[0]) {
+          direction = 'left'
+        } else if (option[1] > lastPosition[1]) {
+          direction = 'bottom'
+        } else if (option[1] < lastPosition[1]) {
+          direction = 'top'
+        }
+        
+        breakWall(lastPosition[0], lastPosition[1], direction);
+        console.log(lastPosition[0] + ' ' + lastPosition[1] + ' ' + direction)
+  
         correctPath.push(option);
         visited.push(option);
-
       } else {
         // Backtrack
         correctPath.pop();
@@ -126,41 +143,5 @@ function generatePath() {
   }
 }
 
-function drawPath() {
-  const gridSize = Math.sqrt(tiles);
-
-  for (let i = 1; i < visited.length-1; i++) {
-    let tile = visited[i]
-    let previousTile = visited[i-1]
-    let nextTile = visited[i+1]
-    let fromDirection = '';
-    let toDirection = '';
-
-    // Determine fromDirection
-    if (tile[1] > previousTile[1]) {
-        fromDirection = 'up';
-    } else if (tile[1] < previousTile[1]) {
-        fromDirection = 'down';
-    } else if (tile[0] < previousTile[0]) {
-        fromDirection = 'left';
-    } else if (tile[0] > previousTile[0]) {
-        fromDirection = 'right';
-    }
-
-    // Determine toDirection
-    if (nextTile[1] > tile[1]) {
-        toDirection = 'up';
-    } else if (nextTile[1] < tile[1]) {
-        toDirection = 'down';
-    } else if (nextTile[0] < tile[0]) {
-        toDirection = 'left';
-    } else if (nextTile[0] > tile[0]) {
-        toDirection = 'right';
-    }
-
-    createPassway(fromDirection, toDirection, tile)
-  }
-}
-
-generatePath()
-drawPath()
+generatePath();
+renderGrid();
