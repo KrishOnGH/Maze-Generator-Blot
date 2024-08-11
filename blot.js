@@ -43,44 +43,75 @@ function CreateTurn(origin, radius, width, direction) {
 
 let tiles = 100
 let tileSize = Math.sqrt(width*height/tiles)
-let routeComplete = false
-let directions = [[0, 0]]
+let correctPath = [[0, 0]]
+let visited = new Set();
+visited.add([0, 0].toString());
 drawLines([[[0, 0], [0, tileSize], [tileSize, tileSize], [tileSize, 0], [0, 0]]])
 
-function arrayEquals(arr1, arr2) {
-  return arr1.length === arr2.length && arr1.every((val, index) => val === arr2[index]);
-}
+function generatePath() {
+  const gridSize = Math.sqrt(tiles);
+  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  let routeComplete = false;
 
-function isVisited(coord, directions) {
-  return directions.some(dir => arrayEquals(dir, coord));
-}
-
-async function generatePath() {
   while (!routeComplete) {
-    let randomOptions = [];
-    let lastDirection = directions[directions.length - 1];
-  
-    if (lastDirection && lastDirection[0] > 0 && !isVisited([lastDirection[0] - 1, lastDirection[1]], directions)) {
-      randomOptions.push([lastDirection[0] - 1, lastDirection[1]]);
+    let lastPosition = correctPath[correctPath.length - 1];
+
+    if (lastPosition) {
+      let [x, y] = lastPosition;
+      let randomOptions = [];
+
+      // Check all possible directions
+      for (const [dx, dy] of directions) {
+        let newX = x + dx;
+        let newY = y + dy;
+        let newPos = [newX, newY].toString();
+
+        if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize && !visited.has(newPos)) {
+          randomOptions.push([newX, newY]);
+        }
+      }
+
+      if (randomOptions.length > 0) {
+        // Choose a random option and add it to the path
+        let option = randomOptions[Math.floor(Math.random() * randomOptions.length)];
+        correctPath.push(option);
+        visited.add(option.toString());
+
+        drawLines([[ 
+          [option[0] * tileSize, option[1] * tileSize], 
+          [option[0] * tileSize, option[1] * tileSize + tileSize], 
+          [option[0] * tileSize + tileSize, option[1] * tileSize + tileSize], 
+          [option[0] * tileSize + tileSize, option[1] * tileSize], 
+          [option[0] * tileSize, option[1] * tileSize]
+        ]]);
+
+      } else {
+        // Backtrack
+        correctPath.pop();
+
+        if (correctPath.length === 0) {
+          routeComplete = true;
+        }
+      }
     }
-    if (lastDirection && lastDirection[0] < Math.sqrt(tiles) - 1 && !isVisited([lastDirection[0] + 1, lastDirection[1]], directions)) {
-      randomOptions.push([lastDirection[0] + 1, lastDirection[1]]);
-    }
-    if (lastDirection && lastDirection[1] > 0 && !isVisited([lastDirection[0], lastDirection[1] - 1], directions)) {
-      randomOptions.push([lastDirection[0], lastDirection[1] - 1]);
-    }
-    if (lastDirection && lastDirection[1] < Math.sqrt(tiles) - 1 && !isVisited([lastDirection[0], lastDirection[1] + 1], directions)) {
-      randomOptions.push([lastDirection[0], lastDirection[1] + 1]);
-    }
-  
-    if (randomOptions.length > 0 || randomOptions.includes([Math.sqrt(tiles), Math.sqrt(tiles)])) {
-      let option = randomOptions[Math.floor(Math.random() * randomOptions.length)];
-      directions.push(option);
-      drawLines([[ [option[0]*tileSize, option[1]*tileSize], [option[0]*tileSize, option[1]*tileSize + tileSize], [option[0]*tileSize + tileSize, option[1]*tileSize + tileSize], [option[0]*tileSize + tileSize, option[1]*tileSize], [option[0]*tileSize, option[1]*tileSize] ]])
-    } else {
+
+    // Check if we've covered all tiles
+    if (visited.size >= tiles) {
       routeComplete = true;
     }
   }
 }
 
 generatePath()
+
+// Draw correct path
+for (let i = 0; i < correctPath.length; i++) {
+    let option = correctPath[i]
+    drawLines([[ 
+      [option[0] * tileSize, option[1] * tileSize], 
+      [option[0] * tileSize, option[1] * tileSize + tileSize], 
+      [option[0] * tileSize + tileSize, option[1] * tileSize + tileSize], 
+      [option[0] * tileSize + tileSize, option[1] * tileSize], 
+      [option[0] * tileSize, option[1] * tileSize]
+    ]], {fill: 'orange'});
+}
