@@ -2,51 +2,82 @@ let width = 125;
 let height = 125;
 setDocDimensions(width, height);
 
-function createPassway(horizontalOrVertical, length, width, origin) {
-  if (horizontalOrVertical == 'horizontal') {
-    const passwayTop = [ [origin[0], origin[1]], [origin[0]+length, origin[1]] ]
-    const passwayBottom = [ [origin[0], origin[1]-width], [origin[0]+length, origin[1]-width] ]
-    return [passwayTop, passwayBottom]
-  } else if (horizontalOrVertical == 'vertical') {
-    const passwayTop = [ [origin[0], origin[1]], [origin[0], origin[1]-length] ]
-    const passwayBottom = [ [origin[0]+width, origin[1]], [origin[0]+width, origin[1]-length] ]
-    return [passwayTop, passwayBottom]
+function draw(origin, side) {
+  if (side == 'left') {
+      drawLines([[ 
+        [origin[0] * tileSize, origin[1] * tileSize], 
+        [origin[0] * tileSize, origin[1] * tileSize + tileSize]
+      ]]);
+  } else if (side == 'right') {
+      drawLines([[ 
+        [origin[0] * tileSize + tileSize, origin[1] * tileSize], 
+        [origin[0] * tileSize + tileSize, origin[1] * tileSize + tileSize]
+      ]]);
+  } else if (side == 'bottom') {
+      drawLines([[ 
+        [origin[0] * tileSize, origin[1] * tileSize], 
+        [origin[0] * tileSize + tileSize, origin[1] * tileSize]
+      ]]);
+  } else if (side == 'top') {
+      drawLines([[ 
+        [origin[0] * tileSize, origin[1] * tileSize + tileSize], 
+        [origin[0] * tileSize + tileSize, origin[1] * tileSize + tileSize]
+      ]]);
   }
 }
 
-function CreateTurn(origin, radius, width, direction) {
-    let outerPath, innerPath;
-    
-    outerPath = [
-        [origin[0], origin[1] - radius],
-        [origin[0], origin[1]],
-        [origin[0] + radius, origin[1]]
-    ]
-    innerPath = [
-        [origin[0] + width, origin[1] - radius],
-        [origin[0] + width, origin[1] - width],
-        [origin[0] + radius, origin[1] - width]
-    ]
-
-    let pathway = [outerPath, innerPath]
-  
-    if (direction == 'bottomright') {
-      return bt.rotate(pathway, 90)
-    } else if (direction == 'bottomleft') {
-      return bt.rotate(pathway, 180)
-    } else if (direction == 'topleft') {
-      return bt.rotate(pathway, 270)
+function createPassway(fromDirection, toDirection, origin) {
+  if (fromDirection == toDirection) {
+    if (fromDirection == 'up' || fromDirection == 'down') {
+      draw(origin, 'right')
+      draw(origin, 'left')
+    } else if (fromDirection == 'right' || fromDirection == 'left') {
+      draw(origin, 'top')
+      draw(origin, 'bottom')
     }
+  } 
+  
+  else if (fromDirection == 'up') {
+    draw(origin, 'top')
+    if (toDirection == 'right') {
+      draw(origin, 'left')
+    } else if (toDirection == 'left') {
+      draw(origin, 'right')
+    }
+  } 
+  
+  else if (fromDirection == 'down') {
+    draw(origin, 'bottom')
+    if (toDirection == 'right') {
+      draw(origin, 'left')
+    } else if (toDirection == 'left') {
+      draw(origin, 'right')
+    }
+  } 
+  
+  else if (fromDirection == 'right') {
+    draw(origin, 'right')
+    if (toDirection == 'up') {
+      draw(origin, 'bottom')
+    } else if (toDirection == 'down') {
+      draw(origin, 'top')
+    }
+  }
 
-    return pathway
+  else if (fromDirection == 'left') {
+    draw(origin, 'left')
+    if (toDirection == 'up') {
+      draw(origin, 'bottom')
+    } else if (toDirection == 'down') {
+      draw(origin, 'top')
+    }
+  }
 }
 
 let tiles = 100
 let tileSize = Math.sqrt(width*height/tiles)
 let correctPath = [[0, 0]]
-let visited = new Set();
-visited.add([0, 0].toString());
-drawLines([[[0, 0], [0, tileSize], [tileSize, tileSize], [tileSize, 0], [0, 0]]])
+let visited = [[0, 0]]; // Initialize visited as an array with the starting tile
 
 function generatePath() {
   const gridSize = Math.sqrt(tiles);
@@ -64,10 +95,11 @@ function generatePath() {
       for (const [dx, dy] of directions) {
         let newX = x + dx;
         let newY = y + dy;
-        let newPos = [newX, newY].toString();
+        let newPos = [newX, newY];
 
-        if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize && !visited.has(newPos)) {
-          randomOptions.push([newX, newY]);
+        // Check if newPos is within bounds and not already visited
+        if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize && !visited.some(v => v[0] === newX && v[1] === newY)) {
+          randomOptions.push(newPos);
         }
       }
 
@@ -75,15 +107,7 @@ function generatePath() {
         // Choose a random option and add it to the path
         let option = randomOptions[Math.floor(Math.random() * randomOptions.length)];
         correctPath.push(option);
-        visited.add(option.toString());
-
-        drawLines([[ 
-          [option[0] * tileSize, option[1] * tileSize], 
-          [option[0] * tileSize, option[1] * tileSize + tileSize], 
-          [option[0] * tileSize + tileSize, option[1] * tileSize + tileSize], 
-          [option[0] * tileSize + tileSize, option[1] * tileSize], 
-          [option[0] * tileSize, option[1] * tileSize]
-        ]]);
+        visited.push(option);
 
       } else {
         // Backtrack
@@ -96,22 +120,47 @@ function generatePath() {
     }
 
     // Check if we've covered all tiles
-    if (visited.size >= tiles) {
+    if (visited.length >= tiles) {
       routeComplete = true;
     }
   }
 }
 
-generatePath()
+function drawPath() {
+  const gridSize = Math.sqrt(tiles);
 
-// Draw correct path
-for (let i = 0; i < correctPath.length; i++) {
-    let option = correctPath[i]
-    drawLines([[ 
-      [option[0] * tileSize, option[1] * tileSize], 
-      [option[0] * tileSize, option[1] * tileSize + tileSize], 
-      [option[0] * tileSize + tileSize, option[1] * tileSize + tileSize], 
-      [option[0] * tileSize + tileSize, option[1] * tileSize], 
-      [option[0] * tileSize, option[1] * tileSize]
-    ]], {fill: 'orange'});
+  for (let i = 1; i < visited.length-1; i++) {
+    let tile = visited[i]
+    let previousTile = visited[i-1]
+    let nextTile = visited[i+1]
+    let fromDirection = '';
+    let toDirection = '';
+
+    // Determine fromDirection
+    if (tile[1] > previousTile[1]) {
+        fromDirection = 'up';
+    } else if (tile[1] < previousTile[1]) {
+        fromDirection = 'down';
+    } else if (tile[0] < previousTile[0]) {
+        fromDirection = 'left';
+    } else if (tile[0] > previousTile[0]) {
+        fromDirection = 'right';
+    }
+
+    // Determine toDirection
+    if (nextTile[1] > tile[1]) {
+        toDirection = 'up';
+    } else if (nextTile[1] < tile[1]) {
+        toDirection = 'down';
+    } else if (nextTile[0] < tile[0]) {
+        toDirection = 'left';
+    } else if (nextTile[0] > tile[0]) {
+        toDirection = 'right';
+    }
+
+    createPassway(fromDirection, toDirection, tile)
+  }
 }
+
+generatePath()
+drawPath()
