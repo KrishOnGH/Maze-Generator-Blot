@@ -41,21 +41,46 @@ function CreateTurn(origin, radius, width, direction) {
     return pathway
 }
 
-// Example usage
-const verticalleft = createPassway('vertical', 22, 5, [10, height-10-5])
-drawLines(verticalleft)
-const verticalright = createPassway('vertical', 22, 5, [10+22+5, height-10-5])
-drawLines(verticalright)
-const horizontaltop = createPassway('horizontal', 22, 5, [10+5, height-10])
-drawLines(horizontaltop)
-const horizontalbottom = createPassway('horizontal', 22, 5, [10+5, height-10-5-22])
-drawLines(horizontalbottom)
+let tiles = 100
+let tileSize = Math.sqrt(width*height/tiles)
+let routeComplete = false
+let directions = [[0, 0]]
+drawLines([[[0, 0], [0, tileSize], [tileSize, tileSize], [tileSize, 0], [0, 0]]])
 
-const bottomrightcorner = CreateTurn([10+22+5, 125-10-5-22], 5, 5, 'bottomleft');
-drawLines(bottomrightcorner);
-const bottomleftcorner = CreateTurn([10, 125-10-5-22], 5, 5, 'bottomright');
-drawLines(bottomleftcorner);
-const topleftcorner = CreateTurn([10, 125-10], 5, 5, 'topright');
-drawLines(topleftcorner);
-const toprightcorner = CreateTurn([10+22+5, 125-10], 5, 5, 'topleft');
-drawLines(toprightcorner);
+function arrayEquals(arr1, arr2) {
+  return arr1.length === arr2.length && arr1.every((val, index) => val === arr2[index]);
+}
+
+function isVisited(coord, directions) {
+  return directions.some(dir => arrayEquals(dir, coord));
+}
+
+async function generatePath() {
+  while (!routeComplete) {
+    let randomOptions = [];
+    let lastDirection = directions[directions.length - 1];
+  
+    if (lastDirection && lastDirection[0] > 0 && !isVisited([lastDirection[0] - 1, lastDirection[1]], directions)) {
+      randomOptions.push([lastDirection[0] - 1, lastDirection[1]]);
+    }
+    if (lastDirection && lastDirection[0] < Math.sqrt(tiles) - 1 && !isVisited([lastDirection[0] + 1, lastDirection[1]], directions)) {
+      randomOptions.push([lastDirection[0] + 1, lastDirection[1]]);
+    }
+    if (lastDirection && lastDirection[1] > 0 && !isVisited([lastDirection[0], lastDirection[1] - 1], directions)) {
+      randomOptions.push([lastDirection[0], lastDirection[1] - 1]);
+    }
+    if (lastDirection && lastDirection[1] < Math.sqrt(tiles) - 1 && !isVisited([lastDirection[0], lastDirection[1] + 1], directions)) {
+      randomOptions.push([lastDirection[0], lastDirection[1] + 1]);
+    }
+  
+    if (randomOptions.length > 0 || randomOptions.includes([Math.sqrt(tiles), Math.sqrt(tiles)])) {
+      let option = randomOptions[Math.floor(Math.random() * randomOptions.length)];
+      directions.push(option);
+      drawLines([[ [option[0]*tileSize, option[1]*tileSize], [option[0]*tileSize, option[1]*tileSize + tileSize], [option[0]*tileSize + tileSize, option[1]*tileSize + tileSize], [option[0]*tileSize + tileSize, option[1]*tileSize], [option[0]*tileSize, option[1]*tileSize] ]])
+    } else {
+      routeComplete = true;
+    }
+  }
+}
+
+generatePath()
