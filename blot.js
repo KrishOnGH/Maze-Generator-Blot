@@ -1,6 +1,15 @@
+// Difficulties:
+// 25: Fetus
+// 100: Preschooler
+// 225: 5th Grader
+// 400: Beginner
+// 1600: Intermediate
+// 4900: Arthritis
+// 10000: Impossible
+let tiles = 400; // 400 Reccomended (Perfect Square Required) Change for difficulty
+
 let width = 125;
 let height = 125;
-let tiles = 225; // 225 Reccomended (Perfect Square Required) Change for difficulty
 let gridSize = Math.sqrt(tiles)
 let tileSize = Math.min(width, height) / Math.sqrt(tiles);
 
@@ -79,12 +88,14 @@ function renderGrid() {
     }
 }
 
-let correctPath = [[0, 0]]
+let correctPath = [[0, 0]];
 let visited = [[0, 0]];
+let furthestTile = [];
 
 function generatePath() {
   const gridSize = Math.sqrt(tiles);
   const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  let furthestTileCounter = 1;
   let routeComplete = false;
 
   while (!routeComplete) {
@@ -108,7 +119,7 @@ function generatePath() {
 
       if (randomOptions.length > 0) {
         // Choose a random option and add it to the path
-        let option = randomOptions[Math.floor(Math.random() * randomOptions.length)];
+        let option = randomOptions[bt.randIntInRange(0, randomOptions.length-1)];
 
         let direction = ''
         if (option[0] > lastPosition[0]) {
@@ -126,6 +137,10 @@ function generatePath() {
   
         correctPath.push(option);
         visited.push(option);
+        if (correctPath.length > furthestTileCounter) {
+          furthestTileCounter++
+          furthestTile = option
+        }
       } else {
         // Backtrack
         correctPath.pop();
@@ -145,3 +160,25 @@ function generatePath() {
 
 generatePath();
 renderGrid();
+
+function generateDot(origin) {
+  const radius = tileSize/4;
+
+  const dot = []  
+
+  const disections = 100;
+  const circle = [];
+  for (let i = 0; i <= disections; i++) {
+    const angle = (2 * Math.PI / disections) * i;
+    const x = radius * Math.cos(angle);
+    const y = radius * Math.sin(angle);
+    circle.push([x, y]);
+  }
+  dot.push(circle);
+
+  bt.translate(dot, [radius+tileSize/4+(origin[0]*tileSize), radius+tileSize/4+(origin[1]*tileSize)], bt.bounds(dot).cc);
+  return dot
+}
+
+drawLines(generateDot(correctPath[0]), {fill: 'black'})
+drawLines(generateDot(furthestTile), {fill: 'black'})
