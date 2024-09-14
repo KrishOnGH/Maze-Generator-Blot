@@ -1,3 +1,5 @@
+![Cover](https://github.com/KrishOnGH/Maze-Generator-Blot/blob/2e8b58ab7336684e8c900b7bd7cdfa17073c27af/image.png)
+
 # Blot Maze Generator
 
 A JavaScript script that generates random mazes with start and end points for Hack Club's Blot CNC.
